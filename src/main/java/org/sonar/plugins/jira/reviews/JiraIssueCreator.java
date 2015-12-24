@@ -25,7 +25,9 @@ import com.atlassian.jira.rpc.soap.client.RemoteComponent;
 import com.atlassian.jira.rpc.soap.client.RemoteIssue;
 import com.atlassian.jira.rpc.soap.client.RemotePermissionException;
 import com.atlassian.jira.rpc.soap.client.RemoteValidationException;
+
 import org.apache.commons.lang.StringUtils;
+import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sonar.api.CoreProperties;
@@ -238,9 +240,27 @@ public class JiraIssueCreator implements ServerExtension {
     description.append(QUOTE);
     description.append("\n\nCheck it on SonarQube: ");
     description.append(settings.getString(CoreProperties.SERVER_BASE_URL));
-    description.append("/issue/show/");
+    
+    String version = settings.getString(CoreProperties.SERVER_VERSION);
+    String search= "/issue/show/";
+    if (newVersion(version)) {
+        search= "/issues/search#issues=";
+    }
+    description.append(search);
     description.append(sonarIssue.key());
     return description.toString();
+  }
+  
+  protected boolean newVersion(String arg) {
+      boolean result = false;
+      if (arg != null) {
+          DefaultArtifactVersion minVersion = new DefaultArtifactVersion("5.2");
+          DefaultArtifactVersion version = new DefaultArtifactVersion(arg);
+          if (version.compareTo(minVersion) > -1) {
+              result = true;
+          }
+      }
+      return result;
   }
 
   protected String sonarSeverityToJiraPriorityId(RulePriority reviewSeverity, Settings settings) {
